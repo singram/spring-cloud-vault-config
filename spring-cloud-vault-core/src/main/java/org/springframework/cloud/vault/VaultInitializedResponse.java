@@ -13,32 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.springframework.cloud.vault;
 
 import lombok.Data;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.util.Map;
+import java.util.List;
 
 /**
- * Value object to bind HTTP API responses.
- *
- * @author Spencer Gibb
  * @author Mark Paluch
  */
 @Data
-public class VaultResponse {
+public class VaultInitializedResponse {
 
-	private Map<String, Object> auth;
-	private Map<String, String> data;
-	private Map<String, String> metadata;
-
-	@JsonProperty("lease_duration")
-	private long leaseDuration;
-
-	@JsonProperty("lease_id")
-	private String leaseId;
-	private boolean renewable;
+	@JsonProperty("keys")
+	private List<String> keys;
+	@JsonProperty("root_token")
+	private String rootToken;
 }

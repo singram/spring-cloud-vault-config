@@ -19,6 +19,13 @@ package org.springframework.cloud.vault;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.EndpointAutoConfiguration;
+import org.springframework.boot.actuate.autoconfigure.HealthIndicatorAutoConfiguration;
+import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -51,16 +58,16 @@ public class VaultBootstrapConfiguration {
 		RestTemplate restTemplate = new RestTemplate(
 				clientHttpRequestFactoryWrapper().getClientHttpRequestFactory());
 
-		VaultClient vaultClient = new VaultClient();
-		vaultClient.setRestTemplate(restTemplate);
-
-		return vaultClient;
+		return new VaultClient(vaultProperties, restTemplate);
 	}
 
 	@Bean
 	public VaultProperties vaultProperties() {
 		return new VaultProperties();
 	}
+
+	@Autowired
+	VaultProperties vaultProperties;
 
 	@Bean
 	@ConditionalOnMissingBean
@@ -118,4 +125,19 @@ public class VaultBootstrapConfiguration {
 			return clientHttpRequestFactory;
 		}
 	}
+
+
+	@Configuration
+	@AutoConfigureBefore({ EndpointAutoConfiguration.class })
+	@AutoConfigureAfter({ HealthIndicatorAutoConfiguration.class })
+	@ConditionalOnExpression("${health.vault.enabled:true}")
+	public static class VaultHealthIndicatorConfiguration {
+
+		@Bean
+		@ConditionalOnMissingBean(name = "vaultHealthIndicator")
+		public HealthIndicator vaultHealthIndicator() {
+			return new VaultHealthIndicator();
+		}
+	}
+
 }
