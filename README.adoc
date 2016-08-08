@@ -163,6 +163,7 @@ spring.cloud.vault:
     scheme: http
     connection-timeout: 5000
     read-timeout: 15000
+    token: some-application-token
 ----
 
 * `host` sets the hostname of the Vault host. The host name will be used
@@ -172,6 +173,7 @@ for SSL certificate validation
 Supported schemes are `http` and `https`.
 * `connection-timeout` sets the connection timeout in milliseconds
 * `read-timeout` sets the read timeout in milliseconds
+* `token` sets the main token to authenticate with vault.  This can also be set with the environment variable SPRING_CLOUD_VAULT_TOKEN
 
 Enabling further integrations requires additional dependencies and
 configuration.
@@ -190,11 +192,16 @@ setup are scripted, the scripts are located in `src/test/bash`.
 
 To build the source you will need to install JDK {jdkversion}.
 
-Spring Cloud uses Maven for most build-related activities, and you
+Spring Cloud uses Maven for most build-related activities.  You
 should be able to get off the ground quite quickly by cloning the
-project you are interested in and typing
+project and running the following commands which will install, configure
+and run Vault which is necessary for the tests to pass as a
+pre-requisite to installing the project
 
 ----
+$ ./src/test/bash/install_vault.sh
+$ ./src/test/bash/create_certificates.sh
+$ ./src/test/bash/local_run_vault.sh
 $ ./mvnw install
 ----
 
