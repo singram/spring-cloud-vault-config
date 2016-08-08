@@ -15,43 +15,62 @@
  */
 package org.springframework.cloud.vault;
 
-import java.net.URI;
-import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.util.Assert;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import lombok.Getter;
-import lombok.Setter;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Vault client. This client reads data from Vault.
  *
  * @author Spencer Gibb
  * @author Mark Paluch
+ * @author Stuart Ingram
  */
 public class VaultClient {
 
 	public static final String API_VERSION = "v1";
 	public static final String VAULT_TOKEN = "X-Vault-Token";
 
+	public final static String UNSEAL_URL_TEMPLATE = "sys/unseal";
+	public final static String HEALTH_URL_TEMPLATE = "sys/health";
+
 	@Setter
 	@Getter
 	private RestTemplate restTemplate;
 
-	public VaultClient() {
-		this(new RestTemplate());
+	@Getter
+	private VaultProperties vaultProperties;
+
+	// For testing only!!!
+	public VaultClient(VaultProperties vaultProperties, ClientHttpRequestFactory factory) {
+		this.vaultProperties = vaultProperties;
+		this.restTemplate = new RestTemplate(factory);
 	}
 
-	public VaultClient(RestTemplate restTemplate) {
+	// For testing only!!!
+	public VaultClient(VaultProperties vaultProperties, RestTemplate restTemplate) {
+		this.vaultProperties = vaultProperties;
 		this.restTemplate = restTemplate;
+	}
+
+	public VaultClient(VaultProperties vaultProperties) {
+		this.vaultProperties = vaultProperties;
+		this.restTemplate = new RestTemplate(ClientHttpRequestFactoryFactory
+				.create(vaultProperties));
 	}
 
 	/**
@@ -102,6 +121,35 @@ public class VaultClient {
 				createHeaders(vaultToken)));
 	}
 
+	/**
+	 * Unseal the vault using the given {@code key}
+	 *
+	 * @param key must not be {@literal null}.
+	 * @return A {@link VaultSealStatusResponse} containing the current seal status.
+	 */
+	public VaultSealStatusResponse unseal(String key) {
+		Assert.notNull(key, "key must not be empty!");
+		Map<String, String> requestBody = new HashMap<String, String>();
+		requestBody.put("key", key);
+		ResponseEntity<VaultSealStatusResponse> unsealResponse = restTemplate.exchange(
+				buildUri(UNSEAL_URL_TEMPLATE), HttpMethod.PUT, new HttpEntity<>(requestBody, createHeaders()),
+				VaultSealStatusResponse.class);
+		return unsealResponse.getBody();
+	}
+
+	/**
+	 * Query the current Vault service for it's status
+	 *
+	 * @param key must not be {@literal null}.
+	 * @return A {@link VaultHealthResponse} containing the current service status.
+	 */
+	public VaultHealthResponse health() {
+		ResponseEntity<VaultHealthResponse> healthResponse = restTemplate.exchange(
+				buildUri(HEALTH_URL_TEMPLATE), HttpMethod.GET, new HttpEntity<>(null, createHeaders()),
+				VaultHealthResponse.class);
+		return healthResponse.getBody();
+	}
+
 	private VaultClientResponse exchange(URI uri, HttpMethod httpMethod,
 			HttpEntity<?> httpEntity) {
 
@@ -128,6 +176,17 @@ public class VaultClient {
 	}
 
 	/**
+	 * Build the Vault {@link URI} based on the current {@link VaultProperties} and
+	 * given {@code path}.
+	 *
+	 * @param path must not be {@literal null}.
+	 * @return
+	 */
+	public URI buildUri(String path) {
+		return URI.create(createBaseUrlWithPath(this.vaultProperties, path));
+	}
+
+	/**
 	 * Build the Vault {@link URI} based on the given {@link VaultProperties} and
 	 * {@code path}.
 	 *
@@ -143,7 +202,7 @@ public class VaultClient {
 	 * Build the Vault {@link URI} based on the given {@link VaultProperties} and
 	 * {@code pathTemplate}. URI template variables will be expanded using
 	 * {@code uriVariables}.
-	 * 
+	 *
 	 * @param properties must not be {@literal null}.
 	 * @param pathTemplate must not be empty or {@literal null}.
 	 * @param uriVariables must not be {@literal null}.
@@ -168,6 +227,10 @@ public class VaultClient {
 		HttpHeaders headers = new HttpHeaders();
 		headers.add(VAULT_TOKEN, vaultToken.getToken());
 		return headers;
+	}
+
+	private HttpHeaders createHeaders() {
+		return createHeaders(VaultToken.of(vaultProperties.getToken()));
 	}
 
 	private static String createBaseUrlWithPath(VaultProperties properties, String path) {
