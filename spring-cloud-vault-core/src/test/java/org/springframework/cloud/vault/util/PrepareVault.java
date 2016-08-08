@@ -16,14 +16,16 @@
 
 package org.springframework.cloud.vault.util;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
+import lombok.Data;
+import lombok.NonNull;
+import lombok.Setter;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.cloud.vault.VaultClient;
+import org.springframework.cloud.vault.VaultInitializedResponse;
 import org.springframework.cloud.vault.VaultProperties;
+import org.springframework.cloud.vault.VaultSealStatusResponse;
 import org.springframework.cloud.vault.VaultToken;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
@@ -31,30 +33,25 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.Assert;
-import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import lombok.Data;
-import lombok.NonNull;
-import lombok.Setter;
-import lombok.Value;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 /**
  * Test helper to prepare various settings within Vault.
- * 
+ *
  * @author Mark Paluch
  */
 public class PrepareVault {
 
-	public final static String INITIALIZE_URL_TEMPLATE = "{baseuri}/sys/init";
 	public final static String MOUNT_AUTH_URL_TEMPLATE = "{baseuri}/sys/auth/{authBackend}";
 	public final static String SYS_AUTH_URL_TEMPLATE = "{baseuri}/sys/auth";
 	public final static String MOUNT_SECRET_URL_TEMPLATE = "{baseuri}/sys/mounts/{type}";
 	public final static String SYS_MOUNTS_URL_TEMPLATE = "{baseuri}/sys/mounts";
-	public final static String SEAL_STATUS_URL_TEMPLATE = "{baseuri}/sys/seal-status";
-	public final static String UNSEAL_URL_TEMPLATE = "{baseuri}/sys/unseal";
 	public final static String CREATE_TOKEN_URL_TEMPLATE = "{baseuri}/auth/token/create-orphan";
 	public final static String WRITE_URL_TEMPLATE = "{baseuri}/{path}";
 	public static final ParameterizedTypeReference<Map<String, Object>> MAP_OF_MAPS_TYPE = new ParameterizedTypeReference<Map<String, Object>>() {
@@ -83,7 +80,7 @@ public class PrepareVault {
 	 * @return
 	 */
 	public VaultClient newVaultClient() {
-		return new VaultClient(restTemplate);
+		return new VaultClient(vaultProperties, restTemplate);
 	}
 
 	/**
@@ -95,31 +92,17 @@ public class PrepareVault {
 
 		Assert.notNull(vaultProperties, "VaultProperties must not be null");
 
-		Map<String, String> parameters = parameters(vaultProperties);
+		VaultClient vaultClient = newVaultClient();
 
 		int createKeys = 2;
 		int requiredKeys = 2;
 
-		InitializeVault initializeVault = InitializeVault.of(createKeys, requiredKeys);
-
-		ResponseEntity<VaultInitialized> initResponse = restTemplate.exchange(
-				INITIALIZE_URL_TEMPLATE, HttpMethod.PUT,
-				new HttpEntity<>(initializeVault), VaultInitialized.class, parameters);
-
-		if (!initResponse.getStatusCode().is2xxSuccessful()) {
-			throw new IllegalStateException("Cannot initialize vault: "
-					+ initResponse.toString());
-		}
-		VaultInitialized initialized = initResponse.getBody();
+		VaultInitializedResponse initialized = vaultClient.initialize(createKeys, requiredKeys);
 
 		for (int i = 0; i < requiredKeys; i++) {
+			String key = initialized.getKeys().get(i);
+			VaultSealStatusResponse unsealProgress = vaultClient.unseal(key);
 
-			UnsealKey unsealKey = UnsealKey.of(initialized.getKeys().get(i));
-			ResponseEntity<UnsealProgress> unsealResponse = restTemplate.exchange(
-					UNSEAL_URL_TEMPLATE, HttpMethod.PUT, new HttpEntity<>(unsealKey),
-					UnsealProgress.class, parameters);
-
-			UnsealProgress unsealProgress = unsealResponse.getBody();
 			if (!unsealProgress.isSealed()) {
 				break;
 			}
@@ -130,7 +113,7 @@ public class PrepareVault {
 
 	/**
 	 * Create a token for the given {@code tokenId} and {@code policy}.
-	 * 
+	 *
 	 * @param tokenId
 	 * @param policy
 	 * @return
@@ -169,28 +152,7 @@ public class PrepareVault {
 	 * @return
 	 */
 	public boolean isAvailable() {
-
-		Map<String, String> parameters = parameters(vaultProperties);
-
-		ResponseEntity<String> exchange = null;
-		try {
-			exchange = restTemplate.getForEntity(SEAL_STATUS_URL_TEMPLATE, String.class,
-					parameters);
-
-			if (exchange.getStatusCode().is2xxSuccessful()) {
-				return true;
-			}
-		}
-		catch (HttpStatusCodeException e) {
-			if (e.getStatusCode().is4xxClientError()) {
-				return false;
-			}
-		}
-
-		if (exchange.getStatusCode().is4xxClientError()) {
-			return false;
-		}
-		throw new IllegalStateException("Vault error: " + exchange.toString());
+		return newVaultClient().isAvailable();
 	}
 
 	/**
@@ -224,7 +186,7 @@ public class PrepareVault {
 
 	/**
 	 * Check whether a auth-backend is enabled.
-	 * 
+	 *
 	 * @param authBackend
 	 * @return
 	 */
@@ -426,19 +388,6 @@ public class PrepareVault {
 	/**
 	 * @author Mark Paluch
 	 */
-	@Value(staticConstructor = "of")
-	static class InitializeVault {
-
-		@JsonProperty("secret_shares")
-		private int secretShares;
-
-		@JsonProperty("secret_threshold")
-		private int secretThreshold;
-	}
-
-	/**
-	 * @author Mark Paluch
-	 */
 	@Data
 	static class CreateToken {
 
@@ -452,43 +401,6 @@ public class PrepareVault {
 		private String ttl;
 	}
 
-	/**
-	 * @author Mark Paluch
-	 */
-	@Value(staticConstructor = "of")
-	static class UnsealKey {
-		@JsonProperty
-		@NonNull
-		private String key;
-	}
-
-	/**
-	 * @author Mark Paluch
-	 */
-	@Data
-	static class UnsealProgress {
-
-		@JsonProperty("sealed")
-		private boolean sealed;
-		@JsonProperty("t")
-		private int t;
-		@JsonProperty("n")
-		private int n;
-		@JsonProperty("progress")
-		private int progress;
-	}
-
-	/**
-	 * @author Mark Paluch
-	 */
-	@Data
-	static class VaultInitialized {
-
-		@JsonProperty("keys")
-		private List<String> keys;
-		@JsonProperty("root_token")
-		private String rootToken;
-	}
 
 	/**
 	 * @author Mark Paluch
@@ -511,4 +423,5 @@ public class PrepareVault {
 		@JsonProperty("renewable")
 		private boolean renewable;
 	}
+
 }
