@@ -18,27 +18,16 @@ package org.springframework.cloud.vault;
 
 import lombok.Data;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.util.Map;
-
 /**
- * Value object to bind HTTP API responses.
+ * Value object to bind HTTP API responses for unseal and seal-status calls.
  *
- * @author Spencer Gibb
- * @author Mark Paluch
+ * @author Stuart Ingram
+ * @author Bill Koch
  */
 @Data
-public class VaultResponse {
-
-	private Map<String, Object> auth;
-	private Map<String, String> data;
-	private Map<String, String> metadata;
-
-	@JsonProperty("lease_duration")
-	private long leaseDuration;
-
-	@JsonProperty("lease_id")
-	private String leaseId;
-	private boolean renewable;
+public class VaultSealStatusResponse {
+	private boolean sealed;
+	private int t;
+	private int n;
+	private int progress;
 }

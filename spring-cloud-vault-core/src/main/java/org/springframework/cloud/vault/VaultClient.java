@@ -15,8 +15,8 @@
  */
 package org.springframework.cloud.vault;
 
-import java.net.URI;
-import java.util.Map;
+import lombok.Getter;
+import lombok.Setter;
 
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -28,8 +28,9 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.RestTemplate;
 
-import lombok.Getter;
-import lombok.Setter;
+import java.net.URI;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Vault client. This client reads data from Vault.
@@ -102,6 +103,19 @@ public class VaultClient {
 				createHeaders(vaultToken)));
 	}
 
+	public final static String UNSEAL_URL_TEMPLATE = "{baseuri}/sys/unseal";
+
+	public VaultSealStatusResponse unseal(String key) {
+		Assert.notNull(key, "key must not be empty!");
+		Map<String, String> requestBody = new HashMap<String, String>();
+		requestBody.put("key", key);
+		ResponseEntity<VaultSealStatusResponse> unsealResponse = restTemplate.exchange(
+				UNSEAL_URL_TEMPLATE, HttpMethod.PUT, new HttpEntity<>(requestBody),
+				VaultSealStatusResponse.class);
+		return unsealResponse.getBody();
+	}
+
+
 	private VaultClientResponse exchange(URI uri, HttpMethod httpMethod,
 			HttpEntity<?> httpEntity) {
 
@@ -143,7 +157,7 @@ public class VaultClient {
 	 * Build the Vault {@link URI} based on the given {@link VaultProperties} and
 	 * {@code pathTemplate}. URI template variables will be expanded using
 	 * {@code uriVariables}.
-	 * 
+	 *
 	 * @param properties must not be {@literal null}.
 	 * @param pathTemplate must not be empty or {@literal null}.
 	 * @param uriVariables must not be {@literal null}.
