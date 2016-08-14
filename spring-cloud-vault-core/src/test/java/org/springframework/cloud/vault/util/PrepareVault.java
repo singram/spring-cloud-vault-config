@@ -55,7 +55,6 @@ public class PrepareVault {
 	public final static String MOUNT_SECRET_URL_TEMPLATE = "{baseuri}/sys/mounts/{type}";
 	public final static String SYS_MOUNTS_URL_TEMPLATE = "{baseuri}/sys/mounts";
 	public final static String SEAL_STATUS_URL_TEMPLATE = "{baseuri}/sys/seal-status";
-	//  public final static String UNSEAL_URL_TEMPLATE = "{baseuri}/sys/unseal";
 	public final static String CREATE_TOKEN_URL_TEMPLATE = "{baseuri}/auth/token/create-orphan";
 	public final static String WRITE_URL_TEMPLATE = "{baseuri}/{path}";
 	public static final ParameterizedTypeReference<Map<String, Object>> MAP_OF_MAPS_TYPE = new ParameterizedTypeReference<Map<String, Object>>() {
