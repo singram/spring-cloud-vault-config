@@ -19,6 +19,7 @@ package org.springframework.cloud.vault;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.InitializingBean;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -51,16 +52,16 @@ public class VaultBootstrapConfiguration {
 		RestTemplate restTemplate = new RestTemplate(
 				clientHttpRequestFactoryWrapper().getClientHttpRequestFactory());
 
-		VaultClient vaultClient = new VaultClient();
-		vaultClient.setRestTemplate(restTemplate);
-
-		return vaultClient;
+		return new VaultClient(vaultProperties, restTemplate);
 	}
 
 	@Bean
 	public VaultProperties vaultProperties() {
 		return new VaultProperties();
 	}
+
+	@Autowired
+	VaultProperties vaultProperties;
 
 	@Bean
 	@ConditionalOnMissingBean

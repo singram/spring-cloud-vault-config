@@ -15,10 +15,14 @@
  */
 package org.springframework.cloud.vault;
 
-import java.io.File;
-import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.cloud.vault.util.Settings.findWorkDir;
 
+import org.assertj.core.util.Files;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.cloud.vault.ClientHttpRequestFactoryFactory.Netty;
 import org.springframework.cloud.vault.ClientHttpRequestFactoryFactory.OkHttp;
@@ -27,14 +31,9 @@ import org.springframework.cloud.vault.util.Settings;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.client.ClientHttpRequestFactory;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.springframework.cloud.vault.util.Settings.*;
-
-import org.assertj.core.util.Files;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
+import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 
 /**
  * Integration tests for {@link VaultClient} using TLS certificate authentication using
@@ -69,10 +68,10 @@ public class CertAuthenticationMethodsIntegrationTests extends AbstractIntegrati
 	public void shouldAuthenticateUsingCertificateAuthenticationUsingHttpComponents()
 			throws Exception {
 
-		VaultClient client = new VaultClient(
+		VaultClient client = new VaultClient(vaultProperties,
 				TestRestTemplateFactory
-						.create(ClientHttpRequestFactoryFactory.HttpComponents
-								.usingHttpComponents(vaultProperties)));
+				.create(ClientHttpRequestFactoryFactory.HttpComponents
+						.usingHttpComponents(vaultProperties)));
 
 		ClientAuthentication clientAuthentication = new DefaultClientAuthentication(
 				vaultProperties, client);
@@ -86,7 +85,7 @@ public class CertAuthenticationMethodsIntegrationTests extends AbstractIntegrati
 
 		ClientHttpRequestFactory factory = OkHttp.usingOkHttp(vaultProperties);
 
-		VaultClient client = new VaultClient(TestRestTemplateFactory.create(factory));
+		VaultClient client = new VaultClient(vaultProperties, TestRestTemplateFactory.create(factory));
 
 		ClientAuthentication clientAuthentication = new DefaultClientAuthentication(
 				vaultProperties, client);
@@ -102,7 +101,7 @@ public class CertAuthenticationMethodsIntegrationTests extends AbstractIntegrati
 
 		ClientHttpRequestFactory factory = Netty.usingNetty(vaultProperties);
 
-		VaultClient client = new VaultClient(TestRestTemplateFactory.create(factory));
+		VaultClient client = new VaultClient(vaultProperties, TestRestTemplateFactory.create(factory));
 
 		ClientAuthentication clientAuthentication = new DefaultClientAuthentication(
 				vaultProperties, client);

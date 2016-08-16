@@ -83,7 +83,7 @@ public class PrepareVault {
 	 * @return
 	 */
 	public VaultClient newVaultClient() {
-		return new VaultClient(restTemplate);
+		return new VaultClient(vaultProperties, restTemplate);
 	}
 
 	/**
