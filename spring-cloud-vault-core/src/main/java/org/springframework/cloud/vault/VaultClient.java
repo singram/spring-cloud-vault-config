@@ -46,6 +46,7 @@ public class VaultClient {
 	public static final String VAULT_TOKEN = "X-Vault-Token";
 
 	public final static String UNSEAL_URL_TEMPLATE = "sys/unseal";
+	public final static String SEAL_STATUS_URL_TEMPLATE = "sys/seal-status";
 	public final static String HEALTH_URL_TEMPLATE = "sys/health";
 
 	@Setter
@@ -133,6 +134,19 @@ public class VaultClient {
 		requestBody.put("key", key);
 		ResponseEntity<VaultSealStatusResponse> unsealResponse = restTemplate.exchange(
 				buildUri(UNSEAL_URL_TEMPLATE), HttpMethod.PUT, new HttpEntity<>(requestBody, createHeaders()),
+				VaultSealStatusResponse.class);
+		return unsealResponse.getBody();
+	}
+
+
+	/**
+	 * Query the vault for it's current seal status
+	 *
+	 * @return A {@link VaultSealStatusResponse} containing the current seal status.
+	 */
+	public VaultSealStatusResponse sealStatus() {
+		ResponseEntity<VaultSealStatusResponse> unsealResponse = restTemplate.exchange(
+				buildUri(SEAL_STATUS_URL_TEMPLATE), HttpMethod.GET, new HttpEntity<>(null, createHeaders()),
 				VaultSealStatusResponse.class);
 		return unsealResponse.getBody();
 	}
