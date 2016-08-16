@@ -55,6 +55,11 @@ public class VaultClient {
 		this.restTemplate = restTemplate;
 	}
 
+	public VaultClient(VaultProperties vaultProperties) {
+		this.restTemplate = new RestTemplate(ClientHttpRequestFactoryFactory
+				.create(vaultProperties));
+	}
+
 	/**
 	 * Read data from the given Vault {@code uri} using the {@link VaultToken}.
 	 *
