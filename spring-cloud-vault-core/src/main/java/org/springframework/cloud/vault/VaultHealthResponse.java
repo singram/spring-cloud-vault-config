@@ -29,4 +29,5 @@ public class VaultHealthResponse {
 	private boolean initialized;
 	private boolean sealed;
 	private boolean standby;
+	private int server_time_utc;
 }

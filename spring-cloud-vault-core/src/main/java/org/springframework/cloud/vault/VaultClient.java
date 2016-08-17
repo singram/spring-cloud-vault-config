@@ -133,7 +133,7 @@ public class VaultClient {
 		Map<String, String> requestBody = new HashMap<String, String>();
 		requestBody.put("key", key);
 		ResponseEntity<VaultSealStatusResponse> unsealResponse = restTemplate.exchange(
-				buildUri(UNSEAL_URL_TEMPLATE), HttpMethod.PUT, new HttpEntity<>(requestBody, createHeaders()),
+				buildUri(UNSEAL_URL_TEMPLATE), HttpMethod.PUT, new HttpEntity<>(requestBody),
 				VaultSealStatusResponse.class);
 		return unsealResponse.getBody();
 	}
@@ -159,7 +159,7 @@ public class VaultClient {
 	 */
 	public VaultHealthResponse health() {
 		ResponseEntity<VaultHealthResponse> healthResponse = restTemplate.exchange(
-				buildUri(HEALTH_URL_TEMPLATE), HttpMethod.GET, new HttpEntity<>(null, createHeaders()),
+				buildUri(HEALTH_URL_TEMPLATE), HttpMethod.GET, null, // null, createHeaders()),
 				VaultHealthResponse.class);
 		return healthResponse.getBody();
 	}
