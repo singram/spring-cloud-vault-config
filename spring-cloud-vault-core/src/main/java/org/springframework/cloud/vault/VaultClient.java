@@ -159,7 +159,7 @@ public class VaultClient {
 	 */
 	public VaultHealthResponse health() {
 		ResponseEntity<VaultHealthResponse> healthResponse = restTemplate.exchange(
-				buildUri(HEALTH_URL_TEMPLATE), HttpMethod.GET, null, // null, createHeaders()),
+				buildUri(HEALTH_URL_TEMPLATE), HttpMethod.GET, null,
 				VaultHealthResponse.class);
 		return healthResponse.getBody();
 	}
