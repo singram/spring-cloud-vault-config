@@ -49,7 +49,6 @@ import java.util.Map.Entry;
  */
 public class PrepareVault {
 
-	//	public final static String INITIALIZE_URL_TEMPLATE = "{baseuri}/sys/init";
 	public final static String MOUNT_AUTH_URL_TEMPLATE = "{baseuri}/sys/auth/{authBackend}";
 	public final static String SYS_AUTH_URL_TEMPLATE = "{baseuri}/sys/auth";
 	public final static String MOUNT_SECRET_URL_TEMPLATE = "{baseuri}/sys/mounts/{type}";
