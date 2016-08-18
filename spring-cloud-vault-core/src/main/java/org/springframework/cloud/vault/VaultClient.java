@@ -45,6 +45,7 @@ public class VaultClient {
 	public static final String API_VERSION = "v1";
 	public static final String VAULT_TOKEN = "X-Vault-Token";
 
+	public final static String INITIALIZE_URL_TEMPLATE = "sys/init";
 	public final static String UNSEAL_URL_TEMPLATE = "sys/unseal";
 	public final static String SEAL_STATUS_URL_TEMPLATE = "sys/seal-status";
 	public final static String HEALTH_URL_TEMPLATE = "sys/health";
@@ -121,6 +122,22 @@ public class VaultClient {
 		return exchange(uri, HttpMethod.POST, new HttpEntity<>(entity,
 				createHeaders(vaultToken)));
 	}
+
+	public VaultInitializedResponse initialize(int createKeys, int requiredKeys) {
+		VaultInitializeRequest initializeVault = VaultInitializeRequest.of(createKeys, requiredKeys);
+
+		ResponseEntity<VaultInitializedResponse> initResponse = restTemplate.exchange(
+				INITIALIZE_URL_TEMPLATE, HttpMethod.PUT,
+				new HttpEntity<>(initializeVault), VaultInitializedResponse.class);
+
+		if (!initResponse.getStatusCode().is2xxSuccessful()) {
+			throw new IllegalStateException("Cannot initialize vault: "
+					+ initResponse.toString());
+		}
+		return initResponse.getBody();
+
+	}
+
 
 	/**
 	 * Unseal the vault using the given {@code key}

@@ -19,12 +19,12 @@ package org.springframework.cloud.vault.util;
 import lombok.Data;
 import lombok.NonNull;
 import lombok.Setter;
-import lombok.Value;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.springframework.cloud.vault.VaultClient;
 import org.springframework.cloud.vault.VaultHealthResponse;
+import org.springframework.cloud.vault.VaultInitializedResponse;
 import org.springframework.cloud.vault.VaultProperties;
 import org.springframework.cloud.vault.VaultSealStatusResponse;
 import org.springframework.cloud.vault.VaultToken;
@@ -49,7 +49,7 @@ import java.util.Map.Entry;
  */
 public class PrepareVault {
 
-	public final static String INITIALIZE_URL_TEMPLATE = "{baseuri}/sys/init";
+	//	public final static String INITIALIZE_URL_TEMPLATE = "{baseuri}/sys/init";
 	public final static String MOUNT_AUTH_URL_TEMPLATE = "{baseuri}/sys/auth/{authBackend}";
 	public final static String SYS_AUTH_URL_TEMPLATE = "{baseuri}/sys/auth";
 	public final static String MOUNT_SECRET_URL_TEMPLATE = "{baseuri}/sys/mounts/{type}";
@@ -94,26 +94,16 @@ public class PrepareVault {
 
 		Assert.notNull(vaultProperties, "VaultProperties must not be null");
 
-		Map<String, String> parameters = parameters(vaultProperties);
+		VaultClient vaultClient = newVaultClient();
 
 		int createKeys = 2;
 		int requiredKeys = 2;
 
-		InitializeVault initializeVault = InitializeVault.of(createKeys, requiredKeys);
-
-		ResponseEntity<VaultInitialized> initResponse = restTemplate.exchange(
-				INITIALIZE_URL_TEMPLATE, HttpMethod.PUT,
-				new HttpEntity<>(initializeVault), VaultInitialized.class, parameters);
-
-		if (!initResponse.getStatusCode().is2xxSuccessful()) {
-			throw new IllegalStateException("Cannot initialize vault: "
-					+ initResponse.toString());
-		}
-		VaultInitialized initialized = initResponse.getBody();
+		VaultInitializedResponse initialized = vaultClient.initialize(createKeys, requiredKeys);
 
 		for (int i = 0; i < requiredKeys; i++) {
 			String key = initialized.getKeys().get(i);
-			VaultSealStatusResponse unsealProgress = newVaultClient().unseal(key);
+			VaultSealStatusResponse unsealProgress = vaultClient.unseal(key);
 
 			if (!unsealProgress.isSealed()) {
 				break;
@@ -401,19 +391,6 @@ public class PrepareVault {
 	/**
 	 * @author Mark Paluch
 	 */
-	@Value(staticConstructor = "of")
-	static class InitializeVault {
-
-		@JsonProperty("secret_shares")
-		private int secretShares;
-
-		@JsonProperty("secret_threshold")
-		private int secretThreshold;
-	}
-
-	/**
-	 * @author Mark Paluch
-	 */
 	@Data
 	static class CreateToken {
 
@@ -427,18 +404,6 @@ public class PrepareVault {
 		private String ttl;
 	}
 
-
-	/**
-	 * @author Mark Paluch
-	 */
-	@Data
-	static class VaultInitialized {
-
-		@JsonProperty("keys")
-		private List<String> keys;
-		@JsonProperty("root_token")
-		private String rootToken;
-	}
 
 	/**
 	 * @author Mark Paluch
