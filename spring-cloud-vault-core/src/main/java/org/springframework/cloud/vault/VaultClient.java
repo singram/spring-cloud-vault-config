@@ -102,6 +102,42 @@ public class VaultClient {
 				createHeaders(vaultToken)));
 	}
 
+	/**
+	 * Query the current Vault service for it's health status
+	 *
+	 * @return A {@link VaultHealthResponse} containing the current service status.
+	 */
+	public VaultHealthResponse health() {
+		try {
+			ResponseEntity<VaultHealthResponse> healthResponse = restTemplate.exchange(
+					buildUri(HEALTH_URL_TEMPLATE), HttpMethod.GET, null,
+					VaultHealthResponse.class);
+			return healthResponse.getBody();
+		} catch (HttpStatusCodeException responseError) {
+			try {
+				ObjectMapper mapper = new ObjectMapper();
+				return mapper.readValue(responseError.getResponseBodyAsString(), VaultHealthResponse.class);
+			}
+			catch (Exception jsonError) {
+				throw responseError;
+			}
+		}
+	}
+
+	/**
+	 * Check whether Vault is available (vault created and unsealed).
+	 *
+	 * @return
+	 */
+	public boolean isAvailable() {
+		try{
+			VaultHealthResponse health = health();
+			return health.isInitialized() && !health.isSealed();
+		} catch(Exception e) {
+			return false;
+		}
+	}
+
 	private VaultClientResponse exchange(URI uri, HttpMethod httpMethod,
 			HttpEntity<?> httpEntity) {
 

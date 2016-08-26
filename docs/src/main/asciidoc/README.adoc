@@ -25,6 +25,11 @@ Spring Cloud Vault Config requires SSL certificates and a running
 Vault instance listening on `localhost:8200`. Certificates and the Vault
 setup are scripted, the scripts are located in `src/test/bash`.
 
+The following scripts need to be run prior to building the project for the tests to pass.
+$ ./src/test/bash/install_vault.sh
+$ ./src/test/bash/create_certificates.sh
+$ ./src/test/bash/local_run_vault.sh
+
 include::https://raw.githubusercontent.com/spring-cloud/spring-cloud-build/master/docs/src/main/asciidoc/building.adoc[]
 
 == Contributing
