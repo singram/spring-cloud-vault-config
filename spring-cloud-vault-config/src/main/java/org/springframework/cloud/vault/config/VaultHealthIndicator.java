@@ -13,23 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.springframework.cloud.vault;
+package org.springframework.cloud.vault.config;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.health.Health;
 import org.springframework.boot.actuate.health.HealthIndicator;
+import org.springframework.cloud.vault.VaultHealthResponse;
 
 /**
  * @author Stuart Ingram
  */
 public class VaultHealthIndicator implements HealthIndicator {
 	@Autowired
-	private VaultClient vaultClient;
+	private VaultTemplate vaultTemplate;
 
 	@Override
 	public Health health() {
 		try {
-			VaultHealthResponse vaultHealthResponse = vaultClient.health();
+			VaultHealthResponse vaultHealthResponse = vaultTemplate.health();
 			if(!vaultHealthResponse.isInitialized()) {
 				return Health.down().withDetail("Vault uninitialized",null).build();
 			} else if (vaultHealthResponse.isSealed()) {
